@@ -31,13 +31,46 @@ def main():
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
     gs = ChessEngine.GameState()
-    print(gs.board)
+    validMoves = gs.getALLPossibleMoves()
+    moveMade = False   # flag variable for when a move is made
     loadImages()  # only once, before thw while loop
     running = True
+    sqSelected = ()  # no square is selected, keep track of the last click of the user (tuple : (row, col))
+    playerCLick = []  # keep track of the player click ( two tuples : eg [(6,4) , (4,4)]
     while running:
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
+                # mouse handler
+            elif e.type == p.MOUSEBUTTONDOWN:
+                location = p.mouse.get_pos()  # (x,y) location of the mouse
+                col = location[0]//SQ_SIZE
+                row = location[1]//SQ_SIZE
+                if sqSelected == (row, col):  # the user clicked the same square twice
+                    sqSelected = ()  # deselect
+                    playerCLick = []  # clear player clicks
+                else:
+                    sqSelected = (row, col)
+                    playerCLick.append(sqSelected)  # append for both 1st and 2nd click
+                if len(playerCLick) == 2:  # after the 2nd click
+                    move = ChessEngine.Move(playerCLick[0], playerCLick[1], gs.board)
+                    print(move.getChessNotation())
+                    if move in validMoves:
+                        gs.makeMove(move)
+                        moveMade = True
+                    sqSelected = ()  # reset user click
+                    playerCLick = []
+
+                # key handler
+            elif e.type == p.KEYDOWN:
+                if e.key == p.K_z:  # undo when z is pressed
+                    gs.undoMove()
+                    moveMade = True
+
+        if moveMade:
+            validMoves = gs.getValidMoves()
+            moveMade = False
+
         drawGameState(screen, gs)
         clock.tick(MAX_FPS)
         p.display.flip()
